@@ -30,7 +30,7 @@ dependencies {
 
 
 application {
-    mainClass = "edu.services.placehelper.Application"
+    mainClass = "edu.services.places.Application"
 }
 java {
     sourceCompatibility = JavaVersion.toVersion("25")
