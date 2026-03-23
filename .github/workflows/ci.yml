@@ -39,11 +39,31 @@ jobs:
 
       - name: run tests
         run: ./gradlew test
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: graalvm
+          java-version: "25"
+          cache: gradle
+
+      - run: chmod +x ./gradlew
+
+      - name: Build (skip tests)
+        run: ./gradlew assemble  
   
   docker:
     name: docker
     runs-on: ubuntu-latest
-    needs: test
+    needs: build
     steps:
       - name: checkout
         uses: actions/checkout@v4
