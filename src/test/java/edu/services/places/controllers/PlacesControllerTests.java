@@ -260,6 +260,6 @@ public class PlacesControllerTests
         Assertions.assertEquals("New Address", result.getAddress());
         Assertions.assertEquals("New Architect", result.getArchitect());
         Assertions.assertEquals(3, result.getPopularityScore());
-        Assertions.assertNull(result.getDescription());
+        Assertions.assertEquals("New Description", result.getDescription());
     }
 }
