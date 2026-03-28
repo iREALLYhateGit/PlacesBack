@@ -27,7 +27,7 @@ public class PlacesControllerTests
     @InjectMocks
     private PlaceController controller;
 
-    final static List<Place> places = new ArrayList<>();
+    static final List<Place> places = new ArrayList<>();
 
     @BeforeAll
     static void setUp()
@@ -225,5 +225,41 @@ public class PlacesControllerTests
         Mockito.verify(placeRepository, Mockito.only()).findById(intendedPlaceId);
         Assertions.assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
         Assertions.assertNull(response.body());
+    }
+
+    @Test
+    void testUpdatePlaceAllFields()
+    {
+        final long intendedPlaceId = 1L;
+
+        final Optional<Place> intendedPlace = places.stream()
+                .filter(place -> place.getId() == intendedPlaceId).findFirst();
+
+        final PlaceType newType = new PlaceType(3L, "park");
+
+        final Place updatedPlace = new Place();
+        updatedPlace.setTitle("Updated Title");
+        updatedPlace.setType(newType);
+        updatedPlace.setAddress("New Address");
+        updatedPlace.setArchitect("New Architect");
+        updatedPlace.setPopularityScore(3);
+        updatedPlace.setDescription("New Description");
+
+        Mockito.when(placeRepository.findById(intendedPlaceId)).thenReturn(intendedPlace);
+        Mockito.when(placeRepository.update(Mockito.any())).thenReturn(Mockito.any());
+
+        final HttpResponse<Place> response = controller.updatePlace(intendedPlaceId, updatedPlace);
+
+        Mockito.verify(placeRepository, Mockito.times(1)).findById(intendedPlaceId);
+        Mockito.verify(placeRepository, Mockito.times(1)).update(Mockito.any());
+        Assertions.assertEquals(HttpStatus.OK, response.getStatus());
+
+        final Place result = response.body();
+        Assertions.assertEquals("Updated Title", result.getTitle());
+        Assertions.assertEquals(newType, result.getType());
+        Assertions.assertEquals("New Address", result.getAddress());
+        Assertions.assertEquals("New Architect", result.getArchitect());
+        Assertions.assertEquals(3, result.getPopularityScore());
+        Assertions.assertNull(result.getDescription());
     }
 }
