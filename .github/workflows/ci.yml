@@ -1,119 +1,18 @@
-name: CI
+name: Notify Infra Integration
 
 on:
   push:
-    branches:
-      - main
-      - dev
-      - 'labs/**'
-      - 'fix/**'
+    branches: [labs/lab4]
   workflow_dispatch:
-  repository_dispatch:
-    types:
-      - orchestrated-integration-ci
-
-concurrency:
-  group: ci-${{ github.event_name }}-${{ github.head_ref || github.event.client_payload.ref_name || github.ref_name }}
-  cancel-in-progress: true
 
 jobs:
-  test:
-    name: test (JUnit + Mockito)
+  dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.event.client_payload.ref_name || github.ref_name }}
-
-      - name: set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: graalvm
-          java-version: "25"
-          cache: gradle
-
-      - name: give execute permissions
-        run: chmod +x ./gradlew
-
-      - name: run tests
-        run: ./gradlew test
-  
-  build:
-    name: build
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: graalvm
-          java-version: "25"
-          cache: gradle
-
-      - run: chmod +x ./gradlew
-
-      - name: Build (skip tests)
-        run: ./gradlew assemble
-  
-  sonar:
-    name: sonarqube scan
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.head_ref || github.event.client_payload.ref_name || github.ref_name }}
-
-      - name: set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: graalvm
-          java-version: "25"
-          cache: gradle
-
-      - name: give execute permissions
-        run: chmod +x ./gradlew
-
-      - name: run tests with coverage
-        run: ./gradlew test jacocoTestReport
-
-      - name: sonarqube scan
-        uses: sonarsource/sonarqube-scan-action@v6
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          
-      - name: check quality gate
-        uses: sonarsource/sonarqube-quality-gate-action@v1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-  docker:
-    name: docker
-    runs-on: ubuntu-latest
-    needs: sonar
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.event.client_payload.ref_name || github.ref_name }}
-
-      - name: log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: shuasd/places-backend
+      - name: send dispatch to places-infra
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.INFRA_DISPATCH_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/iREALLYhateGit/places-infra/actions/workflows/ci.yml/dispatches \
+            -d '{"ref": "labs/lab4"}'
